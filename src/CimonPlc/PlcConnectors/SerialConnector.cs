@@ -12,9 +12,6 @@ namespace CimonPlc.PlcConnectors
 {
     public class SerialConnector : PlcConnector
     {
-        private byte _frameNo = 0;
-        public byte FrameNo => (byte)(_frameNo++ > 127 ? 0 : _frameNo);
-
         public SerialConnector(ISerialSocket socket, bool autoConnect = true) : base(socket)
         {
             _socket = socket;
@@ -109,9 +106,10 @@ namespace CimonPlc.PlcConnectors
                 var tempArray = new List<int>();
                 const int dataStartIndex = 6;
                 int dataLength = Tools.ToInt(recievedFrame[4], recievedFrame[5]);
-                for (var x = dataStartIndex; x < dataLength + dataStartIndex; x += 2)
+                for (var x = dataStartIndex; x < dataLength + dataStartIndex; x += 4)
                 {
                     tempArray.Add(Tools.ToInt(recievedFrame[x], recievedFrame[x + 1]));
+                    tempArray.Add(Tools.ToInt(recievedFrame[x+2], recievedFrame[x + 3]));
                 }
                 return (ResponseCode.Success, tempArray.ToArray());
             }
@@ -122,18 +120,104 @@ namespace CimonPlc.PlcConnectors
         }
 
         /// <summary>
-        ///     This function is to assign PLC device memory directly to read bit block. The data
-        ///     can be assigned up to 16 pieces repeatedly.
-        ///     But, The total sum of the word data is not to be over 1024 bits.
+        ///     This function is to assign PLC device memory directly to read bit block. 
+        ///     The total sum of the data is not to be over 126 bits.
         /// </summary>
         /// <param name="memoryType">PLC memory which required to read such as X or D</param>
         /// <param name="address">The word address or the card number of a corresponding device is used, it should contains 6 characters, such as '0000A1'</param>
-        /// <param name="length">Requested length for reading memory. Length must be in the range from 1 to 1024</param>
+        /// <param name="length">Requested length for reading memory. Length must be in the range from 1 to 126</param>
         /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <returns>Returns a tuple includes PLC response code and an array of byte contains read data</returns>
         public override async Task<(ResponseCode responseCode, byte[] data)> ReadBitAsync(MemoryType memoryType, string address, int length)
         {
-            throw new NotImplementedException();
+            Guard.Against.Null(memoryType, nameof(memoryType));
+            Guard.Against.OutOfRange(length, nameof(length), 1, 126);
+            Guard.Against.BadFormat(address, nameof(address), @"[0-9a-fA-F]{1,6}");
+
+
+            while (address.Length < 6)
+                address = "0" + address;
+
+            if (!IsConnected && !_autoConnect)
+                return (ResponseCode.SystemError, null);
+
+            if (!IsConnected)
+            {
+                var connectionStatus = await Connect();
+                if (connectionStatus != ConnectionStatus.Connected)
+                    return (ResponseCode.SystemError, null);
+            }
+
+            var frame = new List<Char>();
+
+            //[0] HEADER : This is 1-byte control letter of ASCII code “ENQ”.
+            frame.Add((char)0x5);
+
+            //[1-2] PLC Station Number : This, 2 - byte data with the range from 0 to 127, if station numbers are assigned, multi-drop communication is available
+            frame.Add('0');
+            frame.Add('0');
+
+            //[3] Cmd : In Master, 1 - byte command can be used and the
+            //format of ‘Data’ field is selected according to each command
+            frame.Add((char)ReadCommand.BitBlockRead);
+
+            //[4-5] Length : Total number of the chars of a frame data device
+            // It contains 8 chars for address + 2 chars for length
+            frame.Add('0');
+            frame.Add('A');
+
+            //[6-15] Data : This is n block based on data needs to write and contains 2 parts :
+            //      1- [6-13] Memory Address : 8 chars
+            frame.Add(memoryType.ToString()[0]);
+            frame.Add('0');
+            frame.AddRange(address.ToCharArray());
+
+            //      2- [14-15] Read Length : 2 chars
+            frame.AddRange(length.ToDualChar());
+
+            //[16-17] BCC : is the remainder value when dividing the binary-sum from Cmd to the end of data by 256.
+            frame.AddBCC();
+
+            //[18] End : This is 1-byte control letter of ASCII code “EOT”.
+            frame.Add((char)0x4);
+
+            try
+            {
+                var SendState = await _socket.SendData(frame.Select(X => Convert.ToByte(X)).ToArray());
+                if (!SendState)
+                    return (ResponseCode.WritingError, null);
+
+                //Read response from PLC
+                await Task.Delay(_timeout);
+                var tempframe = await _socket.RecieveData();
+                var recievedFrame = tempframe.Select(x => (char)x).ToArray();
+                if (recievedFrame == null)
+                    return (ResponseCode.SystemError, null);
+
+                if (_autoConnect)
+                    _socket.Disconnect();
+
+                //If response's cmd equals to E(0X45), then must return error code
+                if (recievedFrame[3] == 'E')
+                    return ((ResponseCode)Tools.ToInt(recievedFrame[6], recievedFrame[7]), null);
+
+                if (!Tools.IsValidSerialResponse(recievedFrame, (byte)ReadCommand.BitBlockRead))
+                    return (ResponseCode.WritingError, null);
+
+                var tempArray = new List<int>();
+                const int dataStartIndex = 6;
+                int dataLength = Tools.ToInt(recievedFrame[4], recievedFrame[5]);
+                for (var x = dataStartIndex; x < dataLength + dataStartIndex; x += 2)
+                {
+                    tempArray.Add(Tools.ToInt(recievedFrame[x], recievedFrame[x + 1]));
+                }
+                return (ResponseCode.Success, tempArray.Select(x => (byte)x).ToArray());
+
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>

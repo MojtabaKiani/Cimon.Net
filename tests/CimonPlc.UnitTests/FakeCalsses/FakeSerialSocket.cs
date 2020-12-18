@@ -42,6 +42,9 @@ namespace CimonPlc.UnitTests.FakeCalsses
                 case (byte)WriteCommands.WordBlockWrite:
                     break;
                 case (byte)ReadCommand.BitBlockRead:
+                    frame.AddRange((Length * 2).ToDualChar());
+                    for (var i = 0; i < Length * 2; i++)
+                        frame.Add('F');
                     break;
                 case (byte)ReadCommand.WordBlockRead:
                     frame.AddRange((Length * 4).ToDualChar());

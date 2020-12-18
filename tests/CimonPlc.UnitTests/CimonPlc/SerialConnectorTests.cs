@@ -61,5 +61,29 @@ namespace CimonPlc.UnitTests
         {
             await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.ReadWordAsync(memoryType, address, length));
         }
+
+
+        [Theory]
+        [InlineData(MemoryType.X, "000F1", 10)]
+        [InlineData(MemoryType.Y, "0", 52)]
+        [InlineData(MemoryType.D, "000F5", 6)]
+        [InlineData(MemoryType.M, "0F01", 126)]
+        [InlineData(MemoryType.L, "000F1", 100)]
+        public async void ReadBitAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, int length)
+        {
+            var (responseCode, data) = await _connector.ReadBitAsync(memoryType, address, length);
+            Assert.Equal(ResponseCode.Success, responseCode);
+            Assert.Equal(length, data.Length);
+        }
+
+        [Theory]
+        [InlineData(MemoryType.X, "00FF0F1", 10)]
+        [InlineData(MemoryType.D, "000x5", 6)]
+        [InlineData(MemoryType.M, "0F01", 256)]
+        [InlineData(MemoryType.Y, "000F1", 0)]
+        public async void ReadBitAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, int length)
+        {
+            await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.ReadBitAsync(memoryType, address, length));
+        }
     }
 }
