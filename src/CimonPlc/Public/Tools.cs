@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -27,10 +28,33 @@ namespace CimonPlc
             return (byte1 << 8) + byte2;
         }
 
+        public static int ToInt(char char1, char char2)
+        {
+          return  int.Parse(string.Concat(char1, char2), System.Globalization.NumberStyles.HexNumber);
+        }
+        
         public static byte[] ToDualByte(this int number)
         {
             number &= 0xFFFF;
             return new byte[] { (byte)(number >> 8), (byte)(number & 0xFF) };
+        }
+
+        public static char[] ToDualChar(this int number)
+        {
+            number &= 0xFFFF;
+            return number.ToString("X2").ToArray();
+        }
+
+        public static void AddBCC(this List<char> input)
+        {
+            if (input == null || input.Count == 0)
+                return;
+
+            // Exclude 3 start chars during BCC calculation
+            var sum = input.Skip(3).Sum(x => Convert.ToByte(x));
+            sum %= 256;
+
+            input.AddRange(sum.ToDualChar());
         }
 
         public static bool IsValidResponse(byte[] buffer, byte frameNo, int ackCommand)
@@ -58,6 +82,18 @@ namespace CimonPlc
 
             return true;
 
+        }
+
+        internal static bool IsValidSerialResponse(char[] recieveframe, byte ackCommand)
+        {
+            if (recieveframe[0]!=(char)2 || recieveframe[^1] != (char)3)
+                return false;
+
+            //[3] Cmd :In Slave, 1 - byte command must be equal to sended command
+            if (recieveframe[3] != (char)ackCommand)
+                return false;
+
+            return true;
         }
     }
 }
