@@ -40,14 +40,16 @@ namespace CimonPlc.UnitTests.FakeCalsses
                 case (byte)WriteCommands.BitBlockWrite:
                     break;
                 case (byte)WriteCommands.WordBlockWrite:
+                    frame.Add('0');
+                    frame.Add('0');
                     break;
                 case (byte)ReadCommand.BitBlockRead:
-                    frame.AddRange((Length * 2).ToDualChar());
+                    frame.AddRange(((byte)(Length * 2)).ToDualChar());
                     for (var i = 0; i < Length * 2; i++)
                         frame.Add('F');
                     break;
                 case (byte)ReadCommand.WordBlockRead:
-                    frame.AddRange((Length * 4).ToDualChar());
+                    frame.AddRange(((byte)(Length * 4)).ToDualChar());
                     for (var i = 0; i < Length*4; i++)
                         frame.Add('F');
                     break;
@@ -62,7 +64,7 @@ namespace CimonPlc.UnitTests.FakeCalsses
         {
             await Task.Delay(100);
             Command = frame[3];
-            Length = Tools.ToInt((char)frame[14], (char)frame[15]);
+            Length = Tools.ToByte((char)frame[14], (char)frame[15]);
             return true;
         }
     }

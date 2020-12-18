@@ -16,7 +16,7 @@ namespace CimonPlc.UnitTests.PublicFunctions
         [InlineData(185 ,'B','9')]
         public void AddBCC_Should_Return_Correct_Value(int input,params char[] chars)
         {
-            var result = input.ToDualChar();
+            var result = ((byte)input).ToDualChar();
             Assert.Equal(2, result.Length);
             Assert.Equal(chars[0], result[0]);
             Assert.Equal(chars[1], result[1]);

@@ -28,9 +28,9 @@ namespace CimonPlc
             return (byte1 << 8) + byte2;
         }
 
-        public static int ToInt(char char1, char char2)
+        public static byte ToByte(char char1, char char2)
         {
-          return  int.Parse(string.Concat(char1, char2), System.Globalization.NumberStyles.HexNumber);
+          return  byte.Parse(string.Concat(char1, char2), System.Globalization.NumberStyles.HexNumber);
         }
         
         public static byte[] ToDualByte(this int number)
@@ -39,10 +39,16 @@ namespace CimonPlc
             return new byte[] { (byte)(number >> 8), (byte)(number & 0xFF) };
         }
 
-        public static char[] ToDualChar(this int number)
+        public static char[] ToDualChar(this byte number)
+        {
+            number &= 0xFF;
+            return number.ToString("X2").ToArray();
+        }
+
+        public static char[] ToQuadChar(this int number)
         {
             number &= 0xFFFF;
-            return number.ToString("X2").ToArray();
+            return number.ToString("X4").ToArray();
         }
 
         public static void AddBCC(this List<char> input)
@@ -54,7 +60,7 @@ namespace CimonPlc
             var sum = input.Skip(3).Sum(x => Convert.ToByte(x));
             sum %= 256;
 
-            input.AddRange(sum.ToDualChar());
+            input.AddRange(((byte)sum).ToDualChar());
         }
 
         public static bool IsValidResponse(byte[] buffer, byte frameNo, int ackCommand)
