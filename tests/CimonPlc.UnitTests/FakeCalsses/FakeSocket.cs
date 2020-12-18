@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace CimonPlc.UnitTests.FakeCalsses
 {
-    public class FakeSocket : IPlcSocket
+    public class FakeSocket : IEthernetSocket
     {
         public bool IsConnected => true;
 

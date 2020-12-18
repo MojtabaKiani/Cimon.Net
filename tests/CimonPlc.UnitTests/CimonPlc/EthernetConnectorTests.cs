@@ -1,18 +1,18 @@
 ﻿using System;
 using Xunit;
-using CimonPlc.PlcConnector;
+using CimonPlc.PlcConnectors;
 using CimonPlc.Enums;
 using CimonPlc.UnitTests.FakeCalsses;
 
 namespace CimonPlc.UnitTests
 {
-    public class ConnectorTests
+    public class EthernetConnectorTests
     {
-        private readonly Connector _connector;
+        private readonly EthernetConnector _connector;
 
-        public ConnectorTests()
+        public EthernetConnectorTests()
         {
-            _connector = new Connector(new FakeSocket());
+            _connector = new EthernetConnector(new FakeSocket());
         }
 
         [Theory]

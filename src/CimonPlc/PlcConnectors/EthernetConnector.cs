@@ -6,64 +6,19 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using CimonPlc.Models;
 
-namespace CimonPlc.PlcConnector
+namespace CimonPlc.PlcConnectors
 {
-    public class Connector
+    public class EthernetConnector : PlcConnector
     {
-        private readonly IPlcSocket _socket;
-        private readonly bool _autoConnect;
-
         private byte _frameNo = 0;
-        private int _timeout;
-
         public byte FrameNo => (byte)(_frameNo++ > 127 ? 0 : _frameNo);
 
-        public Connector(IPlcSocket socket, bool autoConnect = true)
+        public EthernetConnector(IEthernetSocket socket, bool autoConnect = true) : base(socket)
         {
             _socket = socket;
             _autoConnect = autoConnect;
-        }
-
-        /// <summary>
-        /// Creates a connection to PLC using a network socket, before read or write data it must be called.
-        /// </summary>
-        /// <param name="readTimeout">Data read timeout in ms, valid rage is between 100 and 10,000</param>
-        /// <param name="writeTimeout">Data write timeout in ms, valid rage is between 100 and 10,000</param>
-        /// <param name="pingTimeout">Ping Timeout in ms, valid rage is between 100 and 10,000</param>
-        /// <returns>Returns success if it can connect to PLC successfully</returns>
-        public async Task<ConnectionStatus> Connect(int readTimeout = 1000, int writeTimeout = 1000, int pingTimeout = 3000)
-        {
-            Guard.Against.OutOfRange(readTimeout, nameof(readTimeout), 100, 10000);
-            Guard.Against.OutOfRange(writeTimeout, nameof(writeTimeout), 100, 10000);
-            Guard.Against.OutOfRange(pingTimeout, nameof(pingTimeout), 100, 10000);
-
-            try
-            {
-                _timeout = readTimeout;
-                return await _socket.Connect(readTimeout, writeTimeout, pingTimeout);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-        }
-
-        /// <summary>
-        /// Drops the connection to PLC, it should call if you don't set auto connection in read/write functions.
-        /// </summary>
-        /// <returns>Returns success if it can disconnect from PLC successfully</returns>
-        public ConnectionStatus Disconnect()
-        {
-            try
-            {
-                return _socket.Disconnect();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
         }
 
         /// <summary>
@@ -76,7 +31,7 @@ namespace CimonPlc.PlcConnector
         /// <param name="length">Requested length for reading memory. Length must be in the range from 1 to 512</param>
         /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <returns>Returns a tuple includes PLC response code and an array of byte contains read data</returns>
-        public async Task<(ResponseCode responseCode, int[] data)> ReadWordAsync(MemoryType memoryType, string address, int length)
+        public override async Task<(ResponseCode responseCode, int[] data)> ReadWordAsync(MemoryType memoryType, string address, int length)
         {
             Guard.Against.Null(memoryType, nameof(memoryType));
             Guard.Against.OutOfRange(length, nameof(length), 1, 512);
@@ -86,10 +41,10 @@ namespace CimonPlc.PlcConnector
             while (address.Length < 6)
                 address = "0" + address;
 
-            if (!_socket.IsConnected && !_autoConnect)
+            if (!IsConnected && !_autoConnect)
                 return (ResponseCode.SystemError, null);
 
-            if (!_socket.IsConnected)
+            if (!IsConnected)
             {
                 var connectionStatus = await Connect();
                 if (connectionStatus != ConnectionStatus.Connected)
@@ -173,7 +128,7 @@ namespace CimonPlc.PlcConnector
         /// <param name="length">Requested length for reading memory. Length must be in the range from 1 to 1024</param>
         /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <returns>Returns a tuple includes PLC response code and an array of byte contains read data</returns>
-        public async Task<(ResponseCode responseCode, byte[] data)> ReadBitAsync(MemoryType memoryType, string address, int length)
+        public override async Task<(ResponseCode responseCode, byte[] data)> ReadBitAsync(MemoryType memoryType, string address, int length)
         {
             Guard.Against.Null(memoryType, nameof(memoryType));
             Guard.Against.OutOfRange(length, nameof(length), 1, 1024);
@@ -183,10 +138,10 @@ namespace CimonPlc.PlcConnector
             while (address.Length < 6)
                 address = "0" + address;
 
-            if (!_socket.IsConnected && !_autoConnect)
+            if (!IsConnected && !_autoConnect)
                 return (ResponseCode.SystemError, null);
 
-            if (!_socket.IsConnected)
+            if (!IsConnected)
             {
                 var connectionStatus = await Connect();
                 if (connectionStatus != ConnectionStatus.Connected)
@@ -271,7 +226,7 @@ namespace CimonPlc.PlcConnector
         /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <param name="data">Data needed to write on PLC memory, The total sum of word data is not to be over 64 words</param>
         /// <returns>Returns a code which shows PLC response code</returns>
-        public async Task<ResponseCode> WriteWordAsync(MemoryType memoryType, string address, params int[] data)
+        public override async Task<ResponseCode> WriteWordAsync(MemoryType memoryType, string address, params int[] data)
         {
             Guard.Against.NullOrEmpty(data, nameof(data));
             Guard.Against.OutOfRange(data, nameof(data), 0, 0xFFFF);
@@ -282,10 +237,10 @@ namespace CimonPlc.PlcConnector
             while (address.Length < 6)
                 address = "0" + address;
 
-            if (!_socket.IsConnected && !_autoConnect)
+            if (!IsConnected && !_autoConnect)
                 return ResponseCode.SystemError;
 
-            if (!_socket.IsConnected)
+            if (!IsConnected)
             {
                 var connectionStatus = await Connect();
                 if (connectionStatus != ConnectionStatus.Connected)
@@ -366,7 +321,7 @@ namespace CimonPlc.PlcConnector
         /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <param name="data">Data needed to write on PLC memory, The total sum of word data is not to be over 256 bits</param>
         /// <returns>Returns a code which shows PLC response co`de</returns>
-        public async Task<ResponseCode> WriteBitAsync(MemoryType memoryType, string address, params byte[] data)
+        public override async Task<ResponseCode> WriteBitAsync(MemoryType memoryType, string address, params byte[] data)
         {
             Guard.Against.NullOrEmpty(data, nameof(data));
             Guard.Against.OutOfRange<byte>(data, nameof(data), 0, 0xFF);
@@ -377,10 +332,10 @@ namespace CimonPlc.PlcConnector
             while (address.Length < 6)
                 address = "0" + address;
 
-            if (!_socket.IsConnected && !_autoConnect)
+            if (!IsConnected && !_autoConnect)
                 return ResponseCode.SystemError;
 
-            if (!_socket.IsConnected)
+            if (!IsConnected)
             {
                 var connectionStatus = await Connect();
                 if (connectionStatus != ConnectionStatus.Connected)

@@ -6,15 +6,11 @@ using System.Threading.Tasks;
 
 namespace CimonPlc.Sockets
 {
-    public class SerialSocket : IPlcSocket
+    public class SerialSocket : ISerialSocket
     {
         private readonly SerialPort _socket;
-        private readonly string _portName;
-        private readonly int _baudRate;
 
         public bool IsConnected => _socket.IsOpen;
-
-
 
         public SerialSocket(string portName, int baudRate = 9600)
         {

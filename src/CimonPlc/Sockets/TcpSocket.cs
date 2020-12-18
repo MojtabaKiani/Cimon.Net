@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CimonPlc.Sockets
 {
-    public class TcpSocket : IPlcSocket
+    public class TcpSocket : IEthernetSocket
     {
         private readonly Socket _socket;
         private readonly IPAddress _ip;
