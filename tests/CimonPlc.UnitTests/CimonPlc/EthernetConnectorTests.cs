@@ -110,11 +110,11 @@ namespace CimonPlc.UnitTests
 
 
         [Theory]
-        [InlineData(MemoryType.X, "000F0", (byte)10, (byte)100, (byte)250)]
-        [InlineData(MemoryType.Y, "0", (byte)20, (byte)3, (byte)52, (byte)255)]
-        [InlineData(MemoryType.D, "000F1", (byte)16, (byte)50)]
-        [InlineData(MemoryType.M, "0F011", (byte)100, (byte)100, (byte)101, (byte)120, (byte)140)]
-        [InlineData(MemoryType.L, "000F0", (byte)101, (byte)65, (byte)220, (byte)230)]
+        [InlineData(MemoryType.X, "000F0", (byte)1, (byte)1, (byte)1)]
+        [InlineData(MemoryType.Y, "0", (byte)1, (byte)1, (byte)1, (byte)1)]
+        [InlineData(MemoryType.D, "000F1", (byte)1, (byte)1)]
+        [InlineData(MemoryType.M, "0F011", (byte)1, (byte)1, (byte)0, (byte)1, (byte)1)]
+        [InlineData(MemoryType.L, "000F0", (byte)1, (byte)1, (byte)1, (byte)0)]
         public async void WriteBitAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, params byte[] data)
         {
             var result = await _connector.WriteBitAsync(memoryType, address, data);
@@ -122,8 +122,9 @@ namespace CimonPlc.UnitTests
         }
 
         [Theory]
-        [InlineData(MemoryType.X, "00FF001", (byte)10, (byte)110, (byte)0, (byte)12)]
-        [InlineData(MemoryType.D, "000x5", (byte)6)]
+        [InlineData(MemoryType.X, "00FF001", (byte)1, (byte)1, (byte)0, (byte)1)]
+        [InlineData(MemoryType.D, "000x5", (byte)1)]
+        [InlineData(MemoryType.D, "000F5", (byte)2)]
         [InlineData(MemoryType.Y, "0")]
         public async void WriteBitAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, params byte[] data)
         {

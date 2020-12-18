@@ -324,7 +324,7 @@ namespace CimonPlc.PlcConnectors
         public override async Task<ResponseCode> WriteBitAsync(MemoryType memoryType, string address, params byte[] data)
         {
             Guard.Against.NullOrEmpty(data, nameof(data));
-            Guard.Against.OutOfRange<byte>(data, nameof(data), 0, 0xFF);
+            Guard.Against.OutOfRange<byte>(data, nameof(data), 0, 1);
             Guard.Against.OutOfRange(data.Length, nameof(data), 1, 256);
             Guard.Against.Null(memoryType, nameof(memoryType));
             Guard.Against.BadFormat(address, nameof(address), "[0-9a-fA-F]{1,6}");
