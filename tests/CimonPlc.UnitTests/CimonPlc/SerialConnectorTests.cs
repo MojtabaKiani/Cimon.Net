@@ -108,5 +108,28 @@ namespace CimonPlc.UnitTests
         {
             await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.WriteWordAsync(memoryType, address, data));
         }
+
+
+        [Theory]
+        [InlineData(MemoryType.X, "000F0", (byte)1, (byte)1, (byte)0)]
+        [InlineData(MemoryType.Y, "0", (byte)0, (byte)0, (byte)1, (byte)1)]
+        [InlineData(MemoryType.D, "000F1", (byte)1, (byte)1)]
+        [InlineData(MemoryType.M, "0F011", (byte)1, (byte)1, (byte)1, (byte)0, (byte)1)]
+        [InlineData(MemoryType.L, "000F0", (byte)1, (byte)1, (byte)1, (byte)1)]
+        public async void WriteBitAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, params byte[] data)
+        {
+            var result = await _connector.WriteBitAsync(memoryType, address, data);
+            Assert.Equal(ResponseCode.Success, result);
+        }
+
+        [Theory]
+        [InlineData(MemoryType.X, "00FF001", (byte)0, (byte)0, (byte)1, (byte)1)]
+        [InlineData(MemoryType.D, "000x5", (byte)1)]
+        [InlineData(MemoryType.D, "000F5", (byte)2)]
+        [InlineData(MemoryType.Y, "0")]
+        public async void WriteBitAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, params byte[] data)
+        {
+            await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.WriteBitAsync(memoryType, address, data));
+        }
     }
 }

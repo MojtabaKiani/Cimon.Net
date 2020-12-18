@@ -38,6 +38,8 @@ namespace CimonPlc.UnitTests.FakeCalsses
             switch (Command)
             {
                 case (byte)WriteCommands.BitBlockWrite:
+                    frame.Add('0');
+                    frame.Add('0');
                     break;
                 case (byte)WriteCommands.WordBlockWrite:
                     frame.Add('0');

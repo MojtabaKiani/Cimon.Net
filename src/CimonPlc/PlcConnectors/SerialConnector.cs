@@ -282,10 +282,10 @@ namespace CimonPlc.PlcConnectors
             foreach (var word in data)
                 frame.AddRange(word.ToQuadChar());
 
-            //[16-17] BCC : is the remainder value when dividing the binary-sum from Cmd to the end of data by 256.
+            //[^3-^2] BCC : is the remainder value when dividing the binary-sum from Cmd to the end of data by 256.
             frame.AddBCC();
 
-            //[18] End : This is 1-byte control letter of ASCII code “EOT”.
+            //[^1] End : This is 1-byte control letter of ASCII code “EOT”.
             frame.Add((char)0x4);
 
             try
@@ -321,8 +321,7 @@ namespace CimonPlc.PlcConnectors
 
         /// <summary>
         ///     This function is to assign PLC device memory directly to write according to
-        ///     memory data type.The data can be assigned up to 16 pieces repeatedly.
-        ///     But,  The total sum of the data is not to be over 256 bits.
+        ///     memory data type.The total sum of the data is not to be over 126 bits.
         /// </summary>
         /// <param name="memoryType">PLC memory which required to write such as Y or D</param>
         /// <param name="address">The word address or the card number of a corresponding device is used, it should contains 6 characters, such as '0000D1'</param>
@@ -331,7 +330,91 @@ namespace CimonPlc.PlcConnectors
         /// <returns>Returns a code which shows PLC response co`de</returns>
         public override async Task<ResponseCode> WriteBitAsync(MemoryType memoryType, string address, params byte[] data)
         {
-            throw new NotImplementedException();
+            Guard.Against.NullOrEmpty(data, nameof(data));
+            Guard.Against.OutOfRange<byte>(data, nameof(data), 0, 1);
+            Guard.Against.OutOfRange(data.Length, nameof(data), 1, 126);
+            Guard.Against.Null(memoryType, nameof(memoryType));
+            Guard.Against.BadFormat(address, nameof(address), "[0-9a-fA-F]{1,6}");
+
+            while (address.Length < 6)
+                address = "0" + address;
+
+            if (!IsConnected && !_autoConnect)
+                return ResponseCode.SystemError;
+
+            if (!IsConnected)
+            {
+                var connectionStatus = await Connect();
+                if (connectionStatus != ConnectionStatus.Connected)
+                    return ResponseCode.SystemError;
+            }
+
+            var frame = new List<char>();
+
+            //[0] HEADER : This is 1-byte control letter of ASCII code “ENQ”.
+            frame.Add((char)0x5);
+
+            //[1-2] PLC Station Number : This, 2 - byte data with the range from 0 to 127, if station numbers are assigned, multi-drop communication is available
+            frame.Add('0');
+            frame.Add('0');
+
+            //[3] Cmd : In Master, 1 - byte command can be used and the
+            //format of ‘Data’ field is selected according to each command
+            frame.Add((char)WriteCommands.BitBlockWrite);
+
+            //[4-5] Length : Total number of the chars of a frame data device
+            // It contains 8 chars for address + 2 chars word count + 1 char per bit
+            var length = 10 + data.Length ;
+            frame.AddRange(((byte)length).ToDualChar());
+
+            //[6-15] Data : This is n block based on data needs to write and contains 3 parts :
+            //      1- [6-13] Memory Address : 8 chars
+            frame.Add(memoryType.ToString()[0]);
+            frame.Add('0');
+            frame.AddRange(address.ToCharArray());
+
+            //      2- [14-15] Read Length : 2 chars
+            frame.AddRange(((byte)data.Length).ToDualChar());
+
+            //      3- [15-n] Words to write : 1 char per bit
+            foreach (var bit in data)
+                frame.Add((char)bit);
+
+            // [^3-^2]BCC : 2 chars is the remainder value when dividing the binary-sum from Cmd to the end of data by 256.
+            frame.AddBCC();
+
+            //[^1] End : This is 1-byte control letter of ASCII code “EOT”.
+            frame.Add((char)0x4);
+
+            try
+            {
+                var SendState = await _socket.SendData(frame.Select(X => Convert.ToByte(X)).ToArray());
+                if (!SendState)
+                    return ResponseCode.WritingError;
+
+                //Read response from PLC
+                await Task.Delay(_timeout);
+                var tempframe = await _socket.RecieveData();
+                var recievedFrame = tempframe.Select(x => (char)x).ToArray();
+                if (recievedFrame == null)
+                    return ResponseCode.SystemError;
+
+                if (_autoConnect)
+                    _socket.Disconnect();
+
+                //If response's cmd equals to E(0X45), then must return error code
+                if (recievedFrame[3] == 'E')
+                    return (ResponseCode)Tools.ToByte(recievedFrame[6], recievedFrame[7]);
+
+                if (!Tools.IsValidSerialResponse(recievedFrame, (byte)WriteCommands.BitBlockWrite))
+                    return ResponseCode.WritingError;
+
+                return (ResponseCode)Tools.ToByte(recievedFrame[4], recievedFrame[5]);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }
