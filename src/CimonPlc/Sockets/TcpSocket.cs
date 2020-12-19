@@ -39,10 +39,7 @@ namespace CimonPlc.Sockets
             _socket.SendTimeout = writeTimeout;
 
             await _socket.ConnectAsync(remoteEp);
-            if (_socket.Connected)
-                return ConnectionStatus.Connected;
-         
-            return ConnectionStatus.DisConnected;
+            return _socket.Connected ? ConnectionStatus.Connected : ConnectionStatus.DisConnected;
         }
 
         public ConnectionStatus Disconnect()
@@ -57,15 +54,12 @@ namespace CimonPlc.Sockets
             return (result == frame.Length);
         }
 
-        public async Task<byte[]> RecieveData()
+        public async Task<byte[]> ReceiveData()
         {
             var frameLength = _socket.Available;
             var frame = new byte[frameLength];
             var result = await _socket.ReceiveAsync(frame, SocketFlags.None);
-            if (result == frameLength)
-                return frame;
-
-            return null;
+            return result == frameLength ? frame : null;
         }
     }
 }

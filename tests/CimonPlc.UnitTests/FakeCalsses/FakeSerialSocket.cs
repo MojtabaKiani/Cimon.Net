@@ -2,11 +2,10 @@
 using CimonPlc.Interfaces;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 using System;
 
-namespace CimonPlc.UnitTests.FakeCalsses
+namespace CimonPlc.UnitTests.FakeClasses
 {
     public class FakeSerialSocket : ISerialSocket
     {
@@ -26,14 +25,10 @@ namespace CimonPlc.UnitTests.FakeCalsses
             return ConnectionStatus.DisConnected;
         }
 
-        public async Task<byte[]> RecieveData()
+        public async Task<byte[]> ReceiveData()
         {
             await Task.Delay(100);
-            var frame = new List<char>();
-            frame.Add((char)0x2);
-            frame.Add('0');
-            frame.Add('0');
-            frame.Add((char)Command);
+            var frame = new List<char> {(char) 0x2, '0', '0', (char) Command};
 
             switch (Command)
             {
@@ -59,7 +54,7 @@ namespace CimonPlc.UnitTests.FakeCalsses
             frame.AddBCC();
             frame.Add((char)3);
 
-            return frame.Select(x => Convert.ToByte(x)).ToArray();
+            return frame.Select(Convert.ToByte).ToArray();
         }
 
         public async Task<bool> SendData(byte[] frame)

@@ -25,7 +25,6 @@ namespace CimonPlc.PlcConnectors
         /// <param name="memoryType">PLC memory which required to read. Valid symbols are X, Y, M, L, K, F, Z, TC, TS, CC, CS, D, S</param>
         /// <param name="address">The word address or the card number of a corresponding device is used. That is, in case of bit device such as X/Y, the last number should be '0' and should contains 6 character, such as '000010'</param>
         /// <param name="length">Requested length for reading memory. Length must be in the range from 1 to 63</param>
-        /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <returns>Returns a tuple includes PLC response code and an array of byte contains read data</returns>
         public override async Task<(ResponseCode responseCode, int[] data)> ReadWordAsync(MemoryType memoryType, string address, int length)
         {
@@ -82,34 +81,34 @@ namespace CimonPlc.PlcConnectors
 
             try
             {
-                var SendState = await _socket.SendData(frame.Select(X=> Convert.ToByte(X)).ToArray());
-                if (!SendState)
+                var sendState = await _socket.SendData(frame.Select(Convert.ToByte).ToArray());
+                if (!sendState)
                     return (ResponseCode.WritingError, null);
 
                 //Read response from PLC
                 await Task.Delay(_timeout);
-                var tempframe = await _socket.RecieveData();
-                var recievedFrame = tempframe.Select(x => (char)x).ToArray();
-                if (recievedFrame == null)
+                var tempFrame = await _socket.ReceiveData();
+                if (tempFrame == null || tempFrame == Array.Empty<byte>())
                     return (ResponseCode.SystemError, null);
+                var receivedFrame = tempFrame.Select(x => (char)x).ToArray();
 
                 if (_autoConnect)
                     _socket.Disconnect();
 
                 //If response's cmd equals to E(0X45), then must return error code
-                if (recievedFrame[3] == 'E')
-                    return ((ResponseCode)Tools.ToByte(recievedFrame[6], recievedFrame[7]), null);
+                if (receivedFrame[3] == 'E')
+                    return ((ResponseCode)Tools.ToByte(receivedFrame[6], receivedFrame[7]), null);
                     
-                if (!Tools.IsValidSerialResponse(recievedFrame, (byte)ReadCommand.WordBlockRead))
+                if (!Tools.IsValidSerialResponse(receivedFrame, (byte)ReadCommand.WordBlockRead))
                     return (ResponseCode.WritingError, null);
 
                 var tempArray = new List<int>();
                 const int dataStartIndex = 6;
-                int dataLength = Tools.ToByte(recievedFrame[4], recievedFrame[5]);
+                int dataLength = Tools.ToByte(receivedFrame[4], receivedFrame[5]);
                 for (var x = dataStartIndex; x < dataLength + dataStartIndex; x += 4)
                 {
-                    var byte1 = Tools.ToByte(recievedFrame[x], recievedFrame[x + 1]);
-                    var byte2 = Tools.ToByte(recievedFrame[x+2], recievedFrame[x + 3]);
+                    var byte1 = Tools.ToByte(receivedFrame[x], receivedFrame[x + 1]);
+                    var byte2 = Tools.ToByte(receivedFrame[x+2], receivedFrame[x + 3]);
                     tempArray.Add(Tools.ToInt(byte1, byte2));
                 }
                 return (ResponseCode.Success, tempArray.ToArray());
@@ -127,7 +126,6 @@ namespace CimonPlc.PlcConnectors
         /// <param name="memoryType">PLC memory which required to read such as X or D</param>
         /// <param name="address">The word address or the card number of a corresponding device is used, it should contains 6 characters, such as '0000A1'</param>
         /// <param name="length">Requested length for reading memory. Length must be in the range from 1 to 126</param>
-        /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <returns>Returns a tuple includes PLC response code and an array of byte contains read data</returns>
         public override async Task<(ResponseCode responseCode, byte[] data)> ReadBitAsync(MemoryType memoryType, string address, int length)
         {
@@ -184,33 +182,33 @@ namespace CimonPlc.PlcConnectors
 
             try
             {
-                var SendState = await _socket.SendData(frame.Select(X => Convert.ToByte(X)).ToArray());
-                if (!SendState)
+                var sendState = await _socket.SendData(frame.Select(Convert.ToByte).ToArray());
+                if (!sendState)
                     return (ResponseCode.WritingError, null);
 
                 //Read response from PLC
                 await Task.Delay(_timeout);
-                var tempframe = await _socket.RecieveData();
-                var recievedFrame = tempframe.Select(x => (char)x).ToArray();
-                if (recievedFrame == null)
+                var tempFrame = await _socket.ReceiveData();
+                if (tempFrame == null || tempFrame == Array.Empty<byte>())
                     return (ResponseCode.SystemError, null);
-
+                var receivedFrame = tempFrame.Select(x => (char)x).ToArray();
+               
                 if (_autoConnect)
                     _socket.Disconnect();
 
                 //If response's cmd equals to E(0X45), then must return error code
-                if (recievedFrame[3] == 'E')
-                    return ((ResponseCode)Tools.ToByte(recievedFrame[6], recievedFrame[7]), null);
+                if (receivedFrame[3] == 'E')
+                    return ((ResponseCode)Tools.ToByte(receivedFrame[6], receivedFrame[7]), null);
 
-                if (!Tools.IsValidSerialResponse(recievedFrame, (byte)ReadCommand.BitBlockRead))
+                if (!Tools.IsValidSerialResponse(receivedFrame, (byte)ReadCommand.BitBlockRead))
                     return (ResponseCode.WritingError, null);
 
                 var tempArray = new List<int>();
                 const int dataStartIndex = 6;
-                int dataLength = Tools.ToByte(recievedFrame[4], recievedFrame[5]);
+                int dataLength = Tools.ToByte(receivedFrame[4], receivedFrame[5]);
                 for (var x = dataStartIndex; x < dataLength + dataStartIndex; x += 2)
                 {
-                    tempArray.Add(Tools.ToByte(recievedFrame[x], recievedFrame[x + 1]));
+                    tempArray.Add(Tools.ToByte(receivedFrame[x], receivedFrame[x + 1]));
                 }
                 return (ResponseCode.Success, tempArray.Select(x => (byte)x).ToArray());
 
@@ -227,7 +225,6 @@ namespace CimonPlc.PlcConnectors
         /// </summary>
         /// <param name="memoryType">PLC memory which required to write such as Y or D</param>
         /// <param name="address">The word address or the card number of a corresponding device is used. That is, in case of bit device such as X/Y, the last number should be '0' and should contains 6 characters, such as '000010'</param>
-        /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <param name="data">Data needed to write on PLC memory, The total sum of word data is not to be over 64 words</param>
         /// <returns>Returns a code which shows PLC response code</returns>
         public override async Task<ResponseCode> WriteWordAsync(MemoryType memoryType, string address, params int[] data)
@@ -290,28 +287,28 @@ namespace CimonPlc.PlcConnectors
 
             try
             {
-                var SendState = await _socket.SendData(frame.Select(X => Convert.ToByte(X)).ToArray());
-                if (!SendState)
+                var sendState = await _socket.SendData(frame.Select(Convert.ToByte).ToArray());
+                if (!sendState)
                     return ResponseCode.WritingError;
 
                 //Read response from PLC
                 await Task.Delay(_timeout);
-                var tempframe = await _socket.RecieveData();
-                var recievedFrame = tempframe.Select(x => (char)x).ToArray();
-                if (recievedFrame == null)
+                var tempFrame = await _socket.ReceiveData();
+                if (tempFrame == null || tempFrame == Array.Empty<byte>())
                     return ResponseCode.SystemError;
-
+                var receivedFrame = tempFrame.Select(x => (char)x).ToArray();
+            
                 if (_autoConnect)
                     _socket.Disconnect();
 
                 //If response's cmd equals to E(0X45), then must return error code
-                if (recievedFrame[3] == 'E')
-                    return (ResponseCode)Tools.ToByte(recievedFrame[6], recievedFrame[7]);
+                if (receivedFrame[3] == 'E')
+                    return (ResponseCode)Tools.ToByte(receivedFrame[6], receivedFrame[7]);
 
-                if (!Tools.IsValidSerialResponse(recievedFrame, (byte)WriteCommands.WordBlockWrite))
+                if (!Tools.IsValidSerialResponse(receivedFrame, (byte)WriteCommands.WordBlockWrite))
                     return ResponseCode.WritingError;
                
-                return (ResponseCode)Tools.ToByte(recievedFrame[4], recievedFrame[5]);
+                return (ResponseCode)Tools.ToByte(receivedFrame[4], receivedFrame[5]);
             }
             catch (Exception)
             {
@@ -325,7 +322,6 @@ namespace CimonPlc.PlcConnectors
         /// </summary>
         /// <param name="memoryType">PLC memory which required to write such as Y or D</param>
         /// <param name="address">The word address or the card number of a corresponding device is used, it should contains 6 characters, such as '0000D1'</param>
-        /// <param name="autoConnect">It tries to connect to PLC if the connection state is disconnect</param>
         /// <param name="data">Data needed to write on PLC memory, The total sum of word data is not to be over 256 bits</param>
         /// <returns>Returns a code which shows PLC response co`de</returns>
         public override async Task<ResponseCode> WriteBitAsync(MemoryType memoryType, string address, params byte[] data)
@@ -388,28 +384,28 @@ namespace CimonPlc.PlcConnectors
 
             try
             {
-                var SendState = await _socket.SendData(frame.Select(X => Convert.ToByte(X)).ToArray());
-                if (!SendState)
+                var sendState = await _socket.SendData(frame.Select(Convert.ToByte).ToArray());
+                if (!sendState)
                     return ResponseCode.WritingError;
 
                 //Read response from PLC
                 await Task.Delay(_timeout);
-                var tempframe = await _socket.RecieveData();
-                var recievedFrame = tempframe.Select(x => (char)x).ToArray();
-                if (recievedFrame == null)
+                var tempFrame = await _socket.ReceiveData();
+                if (tempFrame == null || tempFrame == Array.Empty<byte>())
                     return ResponseCode.SystemError;
-
+                var receivedFrame = tempFrame.Select(x => (char)x).ToArray();
+          
                 if (_autoConnect)
                     _socket.Disconnect();
 
                 //If response's cmd equals to E(0X45), then must return error code
-                if (recievedFrame[3] == 'E')
-                    return (ResponseCode)Tools.ToByte(recievedFrame[6], recievedFrame[7]);
+                if (receivedFrame[3] == 'E')
+                    return (ResponseCode)Tools.ToByte(receivedFrame[6], receivedFrame[7]);
 
-                if (!Tools.IsValidSerialResponse(recievedFrame, (byte)WriteCommands.BitBlockWrite))
+                if (!Tools.IsValidSerialResponse(receivedFrame, (byte)WriteCommands.BitBlockWrite))
                     return ResponseCode.WritingError;
 
-                return (ResponseCode)Tools.ToByte(recievedFrame[4], recievedFrame[5]);
+                return (ResponseCode)Tools.ToByte(receivedFrame[4], receivedFrame[5]);
             }
             catch (Exception)
             {

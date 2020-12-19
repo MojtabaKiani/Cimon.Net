@@ -13,6 +13,6 @@ namespace CimonPlc.Interfaces
 
         Task<bool> SendData(byte[] frame);
 
-        Task<byte[]> RecieveData();
+        Task<byte[]> ReceiveData();
     }
 }

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 
-namespace CimonPlc.UnitTests.FakeCalsses
+namespace CimonPlc.UnitTests.FakeClasses
 {
     public class FakeSocket : IEthernetSocket
     {
@@ -26,7 +26,7 @@ namespace CimonPlc.UnitTests.FakeCalsses
             return ConnectionStatus.DisConnected;
         }
 
-        public async Task<byte[]> RecieveData()
+        public async Task<byte[]> ReceiveData()
         {
             await Task.Delay(100);
             var frame = new List<byte>();

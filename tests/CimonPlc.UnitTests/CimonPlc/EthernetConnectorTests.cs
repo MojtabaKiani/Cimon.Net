@@ -2,7 +2,7 @@
 using Xunit;
 using CimonPlc.PlcConnectors;
 using CimonPlc.Enums;
-using CimonPlc.UnitTests.FakeCalsses;
+using CimonPlc.UnitTests.FakeClasses;
 
 namespace CimonPlc.UnitTests
 {

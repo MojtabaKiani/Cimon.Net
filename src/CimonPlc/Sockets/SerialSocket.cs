@@ -26,10 +26,7 @@ namespace CimonPlc.Sockets
             _socket.WriteTimeout = writeTimeout;
 
             _socket.Open();
-            if (_socket.IsOpen)
-                return Task.FromResult(ConnectionStatus.Connected);
-
-            return Task.FromResult(ConnectionStatus.DisConnected);
+            return Task.FromResult(_socket.IsOpen ? ConnectionStatus.Connected : ConnectionStatus.DisConnected);
         }
 
         public ConnectionStatus Disconnect()
@@ -44,15 +41,12 @@ namespace CimonPlc.Sockets
             return Task.FromResult(true);
         }
 
-        public Task<byte[]> RecieveData()
+        public Task<byte[]> ReceiveData()
         {
             var frameLength = _socket.BytesToRead;
             var frame = new byte[frameLength];
             var result = _socket.Read(frame,0, frameLength);
-            if (result == frameLength)
-                return Task.FromResult(frame);
-
-            return null;
+            return result == frameLength ? Task.FromResult(frame) : null;
         }
     }
 }

@@ -90,13 +90,13 @@ namespace CimonPlc
 
         }
 
-        internal static bool IsValidSerialResponse(char[] recieveframe, byte ackCommand)
+        internal static bool IsValidSerialResponse(char[] receivedFrame, byte ackCommand)
         {
-            if (recieveframe[0]!=(char)2 || recieveframe[^1] != (char)3)
+            if (receivedFrame[0]!=(char)2 || receivedFrame[^1] != (char)3)
                 return false;
 
-            //[3] Cmd :In Slave, 1 - byte command must be equal to sended command
-            if (recieveframe[3] != (char)ackCommand)
+            //[3] Cmd :In Slave, 1 - byte command must be equal to sent command
+            if (receivedFrame[3] != (char)ackCommand)
                 return false;
 
             return true;
