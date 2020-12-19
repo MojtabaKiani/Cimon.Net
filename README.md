@@ -31,7 +31,7 @@ Create a Connector based on your connection type, You can choose between `Ethern
     await Plc.WriteBitAsync(MemoryType.Y, "000010", 1, 1, 1, 0, 1);
     
 ## Documentation
-Check the Wiki and feel free to edit it: https://github.com/MojtabaKiani/Cimon-PLC/wiki
+Check the Wiki and feel free to edit it: https://github.com/MojtabaKiani/Cimon.Net/wiki
 
 ## Supported PLCs
 Complete range of Cimon PLC products including `PLC-S`, `CP`, `XP` series
