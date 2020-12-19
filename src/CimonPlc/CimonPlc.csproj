@@ -2,11 +2,27 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <PackageId>Cimon.Net</PackageId>
+    <Authors>Mojtaba Kiani</Authors>
+    <Product>Cimon.Net</Product>
+    <Description>A .NET Library for Cimon PLCs Connectivity</Description>
+    <PackageProjectUrl>https://github.com/MojtabaKiani/Cimon.Net</PackageProjectUrl>
+    <PackageTags>Cimon, Cymon, PLc, Industrial</PackageTags>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageIcon>cimon_logo.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Ardalis.GuardClauses" Version="3.0.1" />
     <PackageReference Include="System.IO.Ports" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Users\Mojtaba\Desktop\cimon_logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
