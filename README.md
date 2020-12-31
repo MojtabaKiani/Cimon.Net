@@ -1,3 +1,5 @@
+[![NuGet version](https://badge.fury.io/nu/Cimon.Net.svg)](https://badge.fury.io/nu/Cimon.Net)
+
 # Cimon.Net
 A .NET Library for Cimon PLCs Connectivity
 
