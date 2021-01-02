@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>Cimon.Net</PackageId>
     <Authors>Mojtaba Kiani</Authors>
     <Product>Cimon.Net</Product>
@@ -11,6 +11,10 @@
     <NeutralLanguage>en</NeutralLanguage>
     <PackageIcon>cimon_logo.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/MojtabaKiani/Cimon.Net</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Downgarde project to .Net Core 3.1 to handle more users</PackageReleaseNotes>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
