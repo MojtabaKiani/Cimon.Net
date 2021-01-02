@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
+﻿using Xunit;
 
 namespace CimonPlc.UnitTests.PublicFunctions
 {
@@ -16,7 +11,10 @@ namespace CimonPlc.UnitTests.PublicFunctions
         [InlineData(188417, 'E', '0', '0', '1')]
         public void AddBCC_Should_Return_Correct_Value(int input, params char[] chars)
         {
+            //Act
             var result = input.ToQuadChar();
+
+            //Assert
             Assert.Equal(4, result.Length);
             Assert.Equal(chars[0], result[0]);
             Assert.Equal(chars[1], result[1]);

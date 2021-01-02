@@ -28,7 +28,7 @@ namespace CimonPlc.UnitTests.FakeClasses
         public async Task<byte[]> ReceiveData()
         {
             await Task.Delay(100);
-            var frame = new List<char> {(char) 0x2, '0', '0', (char) Command};
+            var frame = new List<char> { (char)0x2, '0', '0', (char)Command };
 
             switch (Command)
             {
@@ -47,7 +47,7 @@ namespace CimonPlc.UnitTests.FakeClasses
                     break;
                 case (byte)ReadCommand.WordBlockRead:
                     frame.AddRange(((byte)(Length * 4)).ToDualChar());
-                    for (var i = 0; i < Length*4; i++)
+                    for (var i = 0; i < Length * 4; i++)
                         frame.Add('F');
                     break;
             }

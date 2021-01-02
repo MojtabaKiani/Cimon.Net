@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Extensions;
 
 namespace CimonPlc.UnitTests.GuardClauses
 {
@@ -11,9 +10,12 @@ namespace CimonPlc.UnitTests.GuardClauses
     {
         [Theory]
         [ClassData(typeof(CorrectClassData))]
-        public void Should_Return_input_On_Valid_Data(IEnumerable<int> input,int rangeFrom, int rangeTo )
+        public void Should_Return_input_On_Valid_Data(IEnumerable<int> input, int rangeFrom, int rangeTo)
         {
-            var result = Guard.Against.OutOfRange<int>(input, nameof(input), rangeFrom,rangeTo);
+            //Act
+            var result = Guard.Against.OutOfRange<int>(input, nameof(input), rangeFrom, rangeTo);
+
+            //Assert
             Assert.Equal(input, result);
         }
 
@@ -21,6 +23,7 @@ namespace CimonPlc.UnitTests.GuardClauses
         [ClassData(typeof(IncorrectClassData))]
         public void Should_Return_Error_On_InValid_Data(IEnumerable<int> input, int rangeFrom, int rangeTo)
         {
+            //Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => Guard.Against.OutOfRange<int>(input, nameof(input), rangeFrom, rangeTo));
         }
 
@@ -28,6 +31,7 @@ namespace CimonPlc.UnitTests.GuardClauses
         [ClassData(typeof(IncorrectRangeClassData))]
         public void Should_Return_Error_On_InValid_Range(IEnumerable<int> input, int rangeFrom, int rangeTo)
         {
+            //Assert
             Assert.Throws<ArgumentException>(() => Guard.Against.OutOfRange<int>(input, nameof(input), rangeFrom, rangeTo));
         }
 

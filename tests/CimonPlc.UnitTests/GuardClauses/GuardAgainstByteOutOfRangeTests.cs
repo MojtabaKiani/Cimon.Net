@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Extensions;
 
 namespace CimonPlc.UnitTests.GuardClauses
 {
@@ -12,9 +11,12 @@ namespace CimonPlc.UnitTests.GuardClauses
 
         [Theory]
         [ClassData(typeof(CorrectClassData))]
-        public void Should_Return_input_On_Valid_Data(IEnumerable<byte> input,byte rangeFrom, byte rangeTo )
+        public void Should_Return_input_On_Valid_Data(IEnumerable<byte> input, byte rangeFrom, byte rangeTo)
         {
-            var result = Guard.Against.OutOfRange<byte>(input, nameof(input), rangeFrom,rangeTo);
+            //Act
+            var result = Guard.Against.OutOfRange<byte>(input, nameof(input), rangeFrom, rangeTo);
+
+            //Assert
             Assert.Equal(input, result);
         }
 
@@ -22,6 +24,7 @@ namespace CimonPlc.UnitTests.GuardClauses
         [ClassData(typeof(IncorrectClassData))]
         public void Should_Return_Error_On_InValid_Data(IEnumerable<byte> input, byte rangeFrom, byte rangeTo)
         {
+            //Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => Guard.Against.OutOfRange<byte>(input, nameof(input), rangeFrom, rangeTo));
         }
 
@@ -29,6 +32,7 @@ namespace CimonPlc.UnitTests.GuardClauses
         [ClassData(typeof(IncorrectRangeClassData))]
         public void Should_Return_Error_On_InValid_Range(IEnumerable<byte> input, byte rangeFrom, byte rangeTo)
         {
+            //Assert
             Assert.Throws<ArgumentException>(() => Guard.Against.OutOfRange<byte>(input, nameof(input), rangeFrom, rangeTo));
         }
 
@@ -49,7 +53,7 @@ namespace CimonPlc.UnitTests.GuardClauses
             {
                 yield return new object[] { new List<byte> { 10, 12, 15 }, 10, 12 };
                 yield return new object[] { new List<byte> { 100, 200, 120, 180 }, 100, 150 };
-                yield return new object[] { new List<byte> { 15, 120, 158}, 10, 110};
+                yield return new object[] { new List<byte> { 15, 120, 158 }, 10, 110 };
             }
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
@@ -60,7 +64,7 @@ namespace CimonPlc.UnitTests.GuardClauses
             {
                 yield return new object[] { new List<byte> { 10, 12, 15 }, 10, 10 };
                 yield return new object[] { new List<byte> { 100, 200, 120, 180 }, 200, 150 };
-                yield return new object[] { new List<byte> { 52, 86, 250}, 200, 100};
+                yield return new object[] { new List<byte> { 52, 86, 250 }, 200, 100 };
             }
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
