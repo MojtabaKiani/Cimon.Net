@@ -2,7 +2,12 @@
 using Xunit;
 using CimonPlc.PlcConnectors;
 using CimonPlc.Enums;
-using CimonPlc.UnitTests.FakeClasses;
+using CimonPlc.Sockets;
+using Rony.Net;
+using Rony.Listeners;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
 
 namespace CimonPlc.UnitTests
 {
@@ -12,7 +17,8 @@ namespace CimonPlc.UnitTests
 
         public EthernetConnectorTests()
         {
-            _connector = new EthernetConnector(new FakeSocket());
+            //Arrange
+            _connector = new EthernetConnector(new TcpSocket("127.0.0.1"));
         }
 
         [Theory]
@@ -23,7 +29,10 @@ namespace CimonPlc.UnitTests
         [InlineData(1000, 1000, 5000)]
         public async void Connect_Should_Return_Connected_On_Valid_Data(int readTimeout, int writeTimeout, int pingTimeout)
         {
+            //Act
             var result = await _connector.Connect(readTimeout, writeTimeout, pingTimeout);
+
+            //Assert
             Assert.Equal(ConnectionStatus.Connected, result);
         }
 
@@ -35,6 +44,7 @@ namespace CimonPlc.UnitTests
         [InlineData(1000, 1000, 0)]
         public async void Connect_Should_Return_Error_On_Incorrect_Data(int readTimeout, int writeTimeout, int pingTimeout)
         {
+            //Assert
             await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => _connector.Connect(readTimeout, writeTimeout, pingTimeout));
         }
 
@@ -46,7 +56,29 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.L, "000F10", 100)]
         public async void ReadWordAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, int length)
         {
+            //Arrange
+            using var mockServer = new MockServer(new TcpServer(10620));
+            mockServer.Start();
+
+            //Act
+            mockServer.Mock.Send("").Receive(x =>
+            {
+                var response = new List<byte>();
+                response.AddRange(Encoding.ASCII.GetBytes("KDT_PLC_S"));
+                response.Add((byte)(x[9] + 128));
+                response.Add(x[10]);
+                response.Add(0);
+                response.AddRange((9 + length * 2).ToDualByte());
+                response.AddRange(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+                for (var i = 0; i < length; i++)
+                    response.AddRange(new byte[] { 1, 1 });
+                response.AddRange(response.Sum(x => x).ToDualByte());
+                return response.ToArray();
+            });
             var (responseCode, data) = await _connector.ReadWordAsync(memoryType, address, length);
+            mockServer.Stop();
+
+            //Assert
             Assert.Equal(ResponseCode.Success, responseCode);
             Assert.Equal(length, data.Length);
         }
@@ -59,6 +91,7 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.Y, "000F1", 0)]
         public async void ReadWordAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, int length)
         {
+            //Assert
             await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.ReadWordAsync(memoryType, address, length));
         }
 
@@ -70,7 +103,29 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.L, "000F1", 100)]
         public async void ReadBitAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, int length)
         {
+            //Arrange
+            using var mockServer = new MockServer(new TcpServer(10620));
+            mockServer.Start();
+
+            //Act
+            mockServer.Mock.Send("").Receive(x =>
+            {
+                var response = new List<byte>();
+                response.AddRange(Encoding.ASCII.GetBytes("KDT_PLC_S"));
+                response.Add((byte)(x[9] + 128));
+                response.Add(x[10]);
+                response.Add(0);
+                response.AddRange((9 + length).ToDualByte());
+                response.AddRange(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+                for (var i = 0; i < length; i++)
+                    response.Add(1);
+                response.AddRange(response.Sum(x => x).ToDualByte());
+                return response.ToArray();
+            });
             var (responseCode, data) = await _connector.ReadBitAsync(memoryType, address, length);
+            mockServer.Stop();
+
+            //Assert
             Assert.Equal(ResponseCode.Success, responseCode);
             Assert.Equal(length, data.Length);
         }
@@ -82,6 +137,7 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.Y, "000F1", 0)]
         public async void ReadBitAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, int length)
         {
+            //Assert
             await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.ReadBitAsync(memoryType, address, length));
         }
 
@@ -93,7 +149,26 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.L, "000F0", 1010, 65000, 3403, 2302)]
         public async void WriteWordAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, params int[] data)
         {
+            //Arrange
+            using var mockServer = new MockServer(new TcpServer(10620));
+            mockServer.Start();
+
+            //Act
+            mockServer.Mock.Send("").Receive(x =>
+            {
+                var response = new List<byte>();
+                response.AddRange(Encoding.ASCII.GetBytes("KDT_PLC_S"));
+                response.Add((byte)(x[9] + 128));
+                response.Add(0x41);
+                response.Add(0);
+                response.AddRange(new byte[] { 0, 2, 0, 0 });
+                response.AddRange(response.Sum(x => x).ToDualByte());
+                return response.ToArray();
+            });
             var result = await _connector.WriteWordAsync(memoryType, address, data);
+            mockServer.Stop();
+
+            //Assert
             Assert.Equal(ResponseCode.Success, result);
         }
 
@@ -105,6 +180,7 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.Y, "0")]
         public async void WriteWordAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, params int[] data)
         {
+            //Assert
             await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.WriteWordAsync(memoryType, address, data));
         }
 
@@ -117,7 +193,26 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.L, "000F0", (byte)1, (byte)1, (byte)1, (byte)0)]
         public async void WriteBitAsync_Should_Return_Value_On_Correct_Data(MemoryType memoryType, string address, params byte[] data)
         {
+            //Arrange
+            using var mockServer = new MockServer(new TcpServer(10620));
+            mockServer.Start();
+
+            //Act
+            mockServer.Mock.Send("").Receive(x =>
+            {
+                var response = new List<byte>();
+                response.AddRange(Encoding.ASCII.GetBytes("KDT_PLC_S"));
+                response.Add((byte)(x[9] + 128));
+                response.Add(0x41);
+                response.Add(0);
+                response.AddRange(new byte[] { 0, 2, 0, 0 });
+                response.AddRange(response.Sum(x => x).ToDualByte());
+                return response.ToArray();
+            });
             var result = await _connector.WriteBitAsync(memoryType, address, data);
+            mockServer.Stop();
+
+            //Assert
             Assert.Equal(ResponseCode.Success, result);
         }
 
@@ -128,6 +223,7 @@ namespace CimonPlc.UnitTests
         [InlineData(MemoryType.Y, "0")]
         public async void WriteBitAsync_Should_Return_Error_On_Incorrect_Data(MemoryType memoryType, string address, params byte[] data)
         {
+            //Assert
             await Assert.ThrowsAnyAsync<ArgumentException>(() => _connector.WriteBitAsync(memoryType, address, data));
         }
     }
