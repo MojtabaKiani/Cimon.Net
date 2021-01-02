@@ -42,4 +42,5 @@ Complete range of Cimon PLC products including `PLC-S`, `CP`, `XP` series
 You need at least Visual Studio 2019 (you can download the Community Edition for free).
 
 ## Running the tests
-Unit tests use no devices and only work with Faked sockets, but You can test them with PLC only with address a real socket.
+I used my library [Rony.Net](https://github.com/MojtabaKiani/Rony.Net) in unit tests for `EthernetConnector`. But for `SerialConnector`
+I used no device or library and it only works with a fake socket.
